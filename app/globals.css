@@ -1,0 +1,30 @@
+/*
+ * The Next app supplies the fonts the component asks for by name. Inside
+ * Framer these variables are simply absent and the component's own fallback
+ * stacks apply, which is why it never imports next/font itself.
+ */
+:root {
+  --sp-font-display: var(--font-display), "Inter", system-ui, sans-serif;
+  --sp-font-body: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #f7f8f6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
