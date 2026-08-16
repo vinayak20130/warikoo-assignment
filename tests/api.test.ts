@@ -124,6 +124,33 @@ describe("fetchJson — every failure is retried", () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
+  it("never retries more than five times, whatever the caller asks for", async () => {
+    // Retrying every failure is only safe because the chain is capped.
+    fetchMock.mockResolvedValue(errorResponse(500));
+
+    const error = await captureError(fetchJson("/x", { retries: 99, baseDelayMs: 0 }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(6); // the first try plus five retries
+    expect(error.attempts).toBe(6);
+  });
+
+  it("makes a single attempt when retries are turned off", async () => {
+    fetchMock.mockResolvedValue(errorResponse(500));
+
+    const error = await captureError(fetchJson("/x", { retries: 0, baseDelayMs: 0 }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(error.attempts).toBe(1);
+  });
+
+  it("treats a negative retry count as none rather than looping", async () => {
+    fetchMock.mockResolvedValue(errorResponse(500));
+
+    await captureError(fetchJson("/x", { retries: -5, baseDelayMs: 0 }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("reports each attempt as it starts, so the UI can explain a long wait", async () => {
     fetchMock
       .mockResolvedValueOnce(errorResponse(500))

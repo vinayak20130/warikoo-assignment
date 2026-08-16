@@ -3,6 +3,8 @@ import type { CountryCode, Course } from "@/lib/types";
 export const API_BASE = "https://syncsphere-hiv6.onrender.com";
 
 const DEFAULT_RETRIES = 3;
+/** Hard ceiling. Whatever a caller asks for, the chain stays finite and short. */
+const MAX_RETRIES = 5;
 /** A sleeping host gets one patient chance… */
 const FIRST_TIMEOUT_MS = 10_000;
 /** …after which it has proven it is awake, so later attempts wait less. */
@@ -114,6 +116,7 @@ async function requestOnce<T>(
 }
 
 export interface FetchJsonOptions {
+  /** Retries after the first attempt. Clamped to `MAX_RETRIES` (5). */
   retries?: number;
   /** Overrides both per-attempt deadlines. */
   timeoutMs?: number;
@@ -130,18 +133,18 @@ export interface FetchJsonOptions {
  * random — the same URL succeeds on the next call — so there is no failure it
  * can produce that is worth giving up on early.
  *
+ * The chain is always finite: at most `MAX_RETRIES` retries after the first
+ * attempt, no matter what a caller passes. Retrying everything is only safe
+ * because the number of attempts is capped.
+ *
  * The per-attempt timeout is the load-bearing part: the host stalls rather
  * than fails when cold, and without a deadline the page would wait forever
  * instead of trying again.
  */
 export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}): Promise<T> {
-  const {
-    retries = DEFAULT_RETRIES,
-    timeoutMs,
-    baseDelayMs = DEFAULT_BASE_DELAY_MS,
-    signal,
-    onAttempt,
-  } = options;
+  const { timeoutMs, baseDelayMs = DEFAULT_BASE_DELAY_MS, signal, onAttempt } = options;
+
+  const retries = Math.max(0, Math.min(options.retries ?? DEFAULT_RETRIES, MAX_RETRIES));
 
   let lastError: ApiError | undefined;
 
@@ -155,8 +158,9 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}):
     try {
       return await requestOnce<T>(url, deadline, attempt + 1, signal);
     } catch (error) {
-      // Anything the server or the network did is worth another go. Only the
-      // caller's own abort escapes, and that is never an ApiError.
+      // Anything the server or the network did is worth another go, up to the
+      // attempt limit above. A caller's own abort is not an ApiError, so it
+      // breaks out immediately instead of being retried.
       if (!(error instanceof ApiError)) throw error;
       lastError = error;
 
