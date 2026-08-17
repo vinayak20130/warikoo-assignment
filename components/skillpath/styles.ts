@@ -61,7 +61,9 @@ export const CSS = `
   margin: 0;
   max-width: 16ch;
   font-family: var(--sp-font-display, "Bricolage Grotesque", "Inter", system-ui, sans-serif);
-  font-size: clamp(38px, 6.4vw, 66px);
+  /* The floor matters more than the ceiling: at 38px this ran to four lines
+     on a 320px phone and pushed the courses off the first screen entirely. */
+  font-size: clamp(30px, 7.2vw, 66px);
   font-weight: 700;
   line-height: 1.04;
   letter-spacing: -0.035em;
@@ -332,20 +334,62 @@ export const CSS = `
 
 /* ---------- responsive ---------- */
 
-/* The chosen count is an upper bound: narrow screens only ever reduce it. */
+/* Tablet. The chosen column count is an upper bound: narrower screens only
+   ever reduce it, never grow it. */
 @media (max-width: 900px) {
   .sp-grid { grid-template-columns: repeat(var(--sp-columns-md), minmax(0, 1fr)); }
+  .sp-hero { padding-bottom: 72px; }
+  .sp-wordmark { margin-bottom: 56px; }
+  .sp-courses { padding-bottom: 80px; }
 }
 
+/* Touch targets. Keyed on the input device rather than the width, because a
+   tablet in landscape is 1024px wide and still being thumbed — a 17px link is
+   not something you can hit with a finger. The width clause covers a narrow
+   window on a machine with a mouse. */
+@media (pointer: coarse), (max-width: 900px) {
+  .sp-footer-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .sp-footer-links { gap: 0 24px; }
+}
+
+/* Phone. */
 @media (max-width: 640px) {
-  .sp-grid { grid-template-columns: repeat(var(--sp-columns-sm), minmax(0, 1fr)); }
+  .sp-grid {
+    grid-template-columns: repeat(var(--sp-columns-sm), minmax(0, 1fr));
+    gap: 16px;
+  }
   .sp-shell { padding: 0 20px; }
-  .sp-hero { padding: 28px 0 64px; }
-  .sp-wordmark { margin-bottom: 48px; }
-  .sp-subhead { font-size: 16.5px; }
-  .sp-courses { padding-bottom: 72px; }
-  .sp-section-head { align-items: flex-start; }
+
+  .sp-hero { padding: 24px 0 48px; }
+  .sp-wordmark { margin-bottom: 32px; }
+  /* Let the headline use the full column; 16ch is narrower than the screen
+     at this size and only forces extra wraps. */
+  .sp-headline { max-width: 100%; }
+  .sp-subhead { margin-top: 18px; font-size: 16px; line-height: 1.55; }
+  .sp-cta { margin-top: 28px; }
+
+  .sp-section-title { font-size: 24px; }
+  .sp-section-head {
+    align-items: flex-start;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .sp-courses { padding-bottom: 64px; }
+
+  .sp-card,
+  .sp-skeleton-card { padding: 20px; }
   .sp-panel { padding: 36px 24px; }
+
+  .sp-footer { padding: 24px 0 36px; }
+  .sp-footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

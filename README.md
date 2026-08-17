@@ -128,6 +128,22 @@ anything else. The page *around* the cards is deliberately unaffected.
 viewports only ever reduce it (at most 2 on a tablet, 1 on a phone). It is held as three separate
 variables because a media query cannot do arithmetic on a custom property.
 
+## Responsive
+
+Checked at 320, 390, 430, 768, 1024 and 1440px: no horizontal overflow at any of them, and no touch
+target under 44px on any touch device.
+
+- **Phone (≤640px).** One column. The headline floor is 30px rather than 38px — at 38px it ran to
+  four lines on a 320px screen and pushed the courses entirely below the fold. Card padding drops to
+  20px, which is worth 16px of content back on a narrow screen, and the footer stacks.
+- **Tablet (≤900px).** Two columns, with the hero given back some of its vertical space.
+- **Touch targets** key off `pointer: coarse`, not width. A tablet in landscape is 1024px wide and
+  still being thumbed, so a width-based rule would have left its 17px footer links unreachable. The
+  desktop mouse layout is deliberately left alone.
+
+Media queries can't be exercised in jsdom, so this is verified by driving a real browser at each
+width rather than by unit test.
+
 Styling is a single injected `<style>` block reading CSS custom properties — Framer has no build step
 for Tailwind, and inline style objects cannot express hover, media queries, focus rings or line
 clamping. The two controls flow through those variables rather than being threaded down as props.
