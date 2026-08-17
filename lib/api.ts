@@ -2,9 +2,8 @@ import type { CountryCode, Course } from "@/lib/types";
 
 export const API_BASE = "https://syncsphere-hiv6.onrender.com";
 
-const DEFAULT_RETRIES = 3;
-/** Hard ceiling. Whatever a caller asks for, the chain stays finite and short. */
-const MAX_RETRIES = 5;
+/** Fixed, not configurable: four attempts in total, the first plus three. */
+const RETRIES = 3;
 /** A sleeping host gets one patient chance… */
 const FIRST_TIMEOUT_MS = 10_000;
 /** …after which it has proven it is awake, so later attempts wait less. */
@@ -115,9 +114,12 @@ async function requestOnce<T>(
   }
 }
 
+/**
+ * Note what is absent: the number of attempts. That is a policy decision, so
+ * it is fixed above rather than exposed. The two timing options below are
+ * here only so the test suite can run in seconds instead of minutes.
+ */
 export interface FetchJsonOptions {
-  /** Retries after the first attempt. Clamped to `MAX_RETRIES` (5). */
-  retries?: number;
   /** Overrides both per-attempt deadlines. */
   timeoutMs?: number;
   baseDelayMs?: number;
@@ -133,9 +135,8 @@ export interface FetchJsonOptions {
  * random — the same URL succeeds on the next call — so there is no failure it
  * can produce that is worth giving up on early.
  *
- * The chain is always finite: at most `MAX_RETRIES` retries after the first
- * attempt, no matter what a caller passes. Retrying everything is only safe
- * because the number of attempts is capped.
+ * The chain is always finite: four attempts, and no caller can ask for more.
+ * Retrying everything is only safe because the count is fixed.
  *
  * The per-attempt timeout is the load-bearing part: the host stalls rather
  * than fails when cold, and without a deadline the page would wait forever
@@ -144,11 +145,9 @@ export interface FetchJsonOptions {
 export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}): Promise<T> {
   const { timeoutMs, baseDelayMs = DEFAULT_BASE_DELAY_MS, signal, onAttempt } = options;
 
-  const retries = Math.max(0, Math.min(options.retries ?? DEFAULT_RETRIES, MAX_RETRIES));
-
   let lastError: ApiError | undefined;
 
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
+  for (let attempt = 0; attempt <= RETRIES; attempt += 1) {
     if (signal?.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError");
 
     onAttempt?.(attempt + 1);
@@ -164,7 +163,7 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}):
       if (!(error instanceof ApiError)) throw error;
       lastError = error;
 
-      if (attempt < retries) await sleep(backoffDelay(attempt, baseDelayMs), signal);
+      if (attempt < RETRIES) await sleep(backoffDelay(attempt, baseDelayMs), signal);
     }
   }
 

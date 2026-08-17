@@ -5,34 +5,19 @@
  *
  * The point is that the component files can be pasted into Framer's code panel
  * byte for byte — no import needs rewriting on the way in or out.
+ *
+ * It carries only what the two controls use. Framer's real module types these
+ * descriptions properly; a stand-in that half-types them is worse than one
+ * that admits it does not.
  */
 
 export const ControlType = {
   Color: "color",
-  Enum: "enum",
-  String: "string",
   Number: "number",
-  Boolean: "boolean",
 } as const;
 
-export type ControlType = (typeof ControlType)[keyof typeof ControlType];
-
-export interface ControlDescription {
-  type: ControlType;
-  title?: string;
-  defaultValue?: unknown;
-  options?: readonly string[];
-  optionTitles?: readonly string[];
-  displaySegmentedControl?: boolean;
-  [key: string]: unknown;
-}
-
-/**
- * A no-op outside Framer. Framer's editor reads these descriptions to build
- * the design panel; in Next.js the component's own default props stand in,
- * which is why both are generated from the same constants in `tokens.ts`.
- */
+/** A no-op outside Framer, where the component's default props stand in. */
 export function addPropertyControls(
   _component: unknown,
-  _controls: Record<string, ControlDescription>,
+  _controls: Record<string, Record<string, unknown>>,
 ): void {}

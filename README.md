@@ -8,7 +8,7 @@ dev harness and preview, Framer is the design surface.
 ```bash
 npm install
 npm run dev     # http://localhost:3000
-npm test        # 63 tests
+npm test        # 60 tests
 npm run build
 ```
 
@@ -77,7 +77,8 @@ reachable without waiting for the endpoint to flip.
 
 ## Retries
 
-`fetchJson` in `lib/api.ts`. Four attempts by default, **six at the absolute most**.
+`fetchJson` in `lib/api.ts`. **Always four attempts** — the first plus three retries. The count is a
+fixed constant, not an option, so nothing can ask for a longer chain.
 
 **Every failure is retried.** There is no retryable/permanent distinction, because this API produces
 no failure worth giving up on early. Failures are identified by status code alone — no error
@@ -98,9 +99,8 @@ arriving for real and make the error message lie.
   nothing.
 - Plain exponential backoff, no jitter: 300 / 600 / 1200 ms, capped at 8s.
 - A fast-failing 404 reaches the error state in ~3s; a total outage in ~25s.
-- **At most 5 retries, ever.** `retries` defaults to 3 and is clamped to a hard ceiling of 5, so no
-  caller can turn this into a long or unbounded loop. Retrying every failure is only safe because
-  the number of attempts is capped.
+- Retrying every failure is only safe because the count is fixed. That is why it is a constant rather
+  than a parameter with a ceiling — there is no door to guard.
 - The caller's `AbortSignal` is chained into every attempt, so unmounting cancels the chain and no
   stale response lands. An abort breaks out immediately rather than being retried.
 - If the country lookup fails but the courses arrive, the page renders and falls back to `IN`. A
@@ -161,5 +161,5 @@ lib/
   price.ts               currency formatting
   useCourses.ts          the loading/error/empty/ready state machine
   framer-shim.ts         no-op stand-in for Framer's `framer` module
-tests/                   63 tests
+tests/                   60 tests
 ```

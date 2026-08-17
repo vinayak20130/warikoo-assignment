@@ -107,48 +107,23 @@ describe("fetchJson — every failure is retried", () => {
   it("keeps trying a 404 to exhaustion rather than giving up on the first one", async () => {
     fetchMock.mockResolvedValue(errorResponse(404));
 
-    const error = await captureError(fetchJson("/x", { retries: 3, baseDelayMs: 0 }));
+    const error = await captureError(fetchJson("/x", { baseDelayMs: 0 }));
 
     expect(error.status).toBe(404);
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
-  it("gives up after the configured number of retries and reports how many it made", async () => {
+  it("always stops at four attempts and reports how many it made", async () => {
+    // The count is fixed rather than an option, which is what makes retrying
+    // every failure safe: nothing can ask for a longer chain.
     fetchMock.mockResolvedValue(errorResponse(500));
 
-    const error = await captureError(fetchJson("/x", { retries: 3, baseDelayMs: 0 }));
+    const error = await captureError(fetchJson("/x", { baseDelayMs: 0 }));
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(500);
     expect(error.attempts).toBe(4); // the first try plus three retries
     expect(fetchMock).toHaveBeenCalledTimes(4);
-  });
-
-  it("never retries more than five times, whatever the caller asks for", async () => {
-    // Retrying every failure is only safe because the chain is capped.
-    fetchMock.mockResolvedValue(errorResponse(500));
-
-    const error = await captureError(fetchJson("/x", { retries: 99, baseDelayMs: 0 }));
-
-    expect(fetchMock).toHaveBeenCalledTimes(6); // the first try plus five retries
-    expect(error.attempts).toBe(6);
-  });
-
-  it("makes a single attempt when retries are turned off", async () => {
-    fetchMock.mockResolvedValue(errorResponse(500));
-
-    const error = await captureError(fetchJson("/x", { retries: 0, baseDelayMs: 0 }));
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(error.attempts).toBe(1);
-  });
-
-  it("treats a negative retry count as none rather than looping", async () => {
-    fetchMock.mockResolvedValue(errorResponse(500));
-
-    await captureError(fetchJson("/x", { retries: -5, baseDelayMs: 0 }));
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("reports each attempt as it starts, so the UI can explain a long wait", async () => {
@@ -168,7 +143,7 @@ describe("fetchJson — the codes it reports", () => {
   it("reports the real status when the server answered", async () => {
     fetchMock.mockResolvedValue(errorResponse(503));
 
-    const error = await captureError(fetchJson("/x", { retries: 0 }));
+    const error = await captureError(fetchJson("/x"));
 
     expect(error.status).toBe(503);
   });
@@ -176,7 +151,7 @@ describe("fetchJson — the codes it reports", () => {
   it("reports NO_RESPONSE when the server could not be reached", async () => {
     fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
 
-    const error = await captureError(fetchJson("/x", { retries: 0 }));
+    const error = await captureError(fetchJson("/x"));
 
     expect(error.status).toBe(NO_RESPONSE);
   });
@@ -184,7 +159,7 @@ describe("fetchJson — the codes it reports", () => {
   it("reports BAD_BODY when the answer was not readable JSON", async () => {
     fetchMock.mockResolvedValue(new Response("<html>oops</html>", { status: 200 }));
 
-    const error = await captureError(fetchJson("/x", { retries: 0 }));
+    const error = await captureError(fetchJson("/x"));
 
     expect(error.status).toBe(BAD_BODY);
   });
@@ -208,13 +183,11 @@ describe("fetchJson — timeouts", () => {
     fetchMock = hangingFetch();
     vi.stubGlobal("fetch", fetchMock);
 
-    const error = await captureError(
-      fetchJson("/x", { retries: 1, timeoutMs: 10, baseDelayMs: 0 }),
-    );
+    const error = await captureError(fetchJson("/x", { timeoutMs: 10, baseDelayMs: 0 }));
 
     expect(error.status).toBe(TIMED_OUT);
-    expect(error.attempts).toBe(2);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(error.attempts).toBe(4);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it("succeeds on the retry after the first attempt stalls", async () => {
@@ -231,7 +204,7 @@ describe("fetchJson — timeouts", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      fetchJson("/x", { retries: 2, timeoutMs: 10, baseDelayMs: 0 }),
+      fetchJson("/x", { timeoutMs: 10, baseDelayMs: 0 }),
     ).resolves.toEqual({ ok: true });
   });
 
@@ -247,7 +220,7 @@ describe("fetchJson — timeouts", () => {
       return realSetTimeout(fn, ms && ms > 100 ? 5 : ms);
     }) as typeof setTimeout);
 
-    await captureError(fetchJson("/x", { retries: 1, baseDelayMs: 0 }));
+    await captureError(fetchJson("/x", { baseDelayMs: 0 }));
 
     expect(deadlines[0]).toBeGreaterThan(deadlines[1]);
   });
@@ -265,7 +238,6 @@ describe("fetchJson — cancellation", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const pending = fetchJson("/x", {
-      retries: 3,
       baseDelayMs: 0,
       signal: controller.signal,
     });
