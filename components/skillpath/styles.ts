@@ -131,32 +131,33 @@ export const CSS = `
 
 .sp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(288px, 1fr));
-  gap: var(--sp-grid-gap);
+  grid-template-columns: repeat(var(--sp-columns), minmax(0, 1fr));
+  gap: 24px;
   align-items: stretch;
 }
 
 .sp-card {
   display: flex;
   flex-direction: column;
-  padding: var(--sp-card-padding);
-  border: 1px solid var(--sp-hairline);
-  border-radius: var(--sp-card-radius);
-  background: var(--sp-surface);
+  padding: 28px;
+  border: 1px solid var(--sp-card-border);
+  border-radius: 16px;
+  background: var(--sp-card-bg);
+  color: var(--sp-card-ink);
   transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 .sp-card:hover {
   border-color: var(--sp-accent-ring);
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(22, 25, 26, 0.06);
+  box-shadow: 0 10px 28px var(--sp-card-shadow);
 }
 
 .sp-badge {
   align-self: flex-start;
   padding: 5px 11px;
   border-radius: 999px;
-  background: var(--sp-accent-tint);
-  color: var(--sp-accent-text);
+  background: var(--sp-badge-bg);
+  color: var(--sp-badge-text);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -169,7 +170,7 @@ export const CSS = `
 .sp-card-title {
   margin: 16px 0 0;
   font-family: var(--sp-font-display, "Bricolage Grotesque", "Inter", system-ui, sans-serif);
-  font-size: var(--sp-title-size);
+  font-size: 19px;
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: -0.015em;
@@ -189,7 +190,7 @@ export const CSS = `
   min-height: 2.9em;
   font-size: 14.5px;
   line-height: 1.45;
-  color: var(--sp-muted);
+  color: var(--sp-card-muted);
 }
 
 .sp-card-foot {
@@ -200,7 +201,7 @@ export const CSS = `
      whose titles wrap to different heights. */
   margin-top: auto;
   padding-top: 18px;
-  border-top: 1px solid var(--sp-hairline);
+  border-top: 1px solid var(--sp-card-border);
 }
 
 .sp-price {
@@ -214,14 +215,20 @@ export const CSS = `
 /* ---------- loading ---------- */
 
 .sp-skeleton-card {
-  padding: var(--sp-card-padding);
-  border: 1px solid var(--sp-hairline);
-  border-radius: var(--sp-card-radius);
-  background: var(--sp-surface);
+  padding: 28px;
+  border: 1px solid var(--sp-card-border);
+  border-radius: 16px;
+  background: var(--sp-card-bg);
 }
+/* Translucent so the bars read correctly on a card of any colour. */
 .sp-shimmer {
   border-radius: 6px;
-  background: linear-gradient(90deg, #ECEEEB 25%, #F5F6F4 50%, #ECEEEB 75%);
+  background: linear-gradient(
+    90deg,
+    var(--sp-shimmer-base) 25%,
+    var(--sp-shimmer-highlight) 50%,
+    var(--sp-shimmer-base) 75%
+  );
   background-size: 200% 100%;
   animation: sp-shimmer 1.4s ease-in-out infinite;
 }
@@ -242,10 +249,11 @@ export const CSS = `
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 48px var(--sp-card-padding);
-  border: 1px solid var(--sp-hairline);
-  border-radius: var(--sp-card-radius);
-  background: var(--sp-surface);
+  padding: 48px 28px;
+  border: 1px solid var(--sp-card-border);
+  border-radius: 16px;
+  background: var(--sp-card-bg);
+  color: var(--sp-card-ink);
 }
 .sp-panel-title {
   margin: 0;
@@ -258,12 +266,12 @@ export const CSS = `
   margin: 10px 0 0;
   max-width: 52ch;
   font-size: 15px;
-  color: var(--sp-muted);
+  color: var(--sp-card-muted);
 }
 .sp-panel-meta {
   margin: 14px 0 0;
   font-size: 13px;
-  color: var(--sp-muted);
+  color: var(--sp-card-muted);
   font-variant-numeric: tabular-nums;
 }
 .sp-retry {
@@ -324,7 +332,13 @@ export const CSS = `
 
 /* ---------- responsive ---------- */
 
+/* The chosen count is an upper bound: narrow screens only ever reduce it. */
+@media (max-width: 900px) {
+  .sp-grid { grid-template-columns: repeat(var(--sp-columns-md), minmax(0, 1fr)); }
+}
+
 @media (max-width: 640px) {
+  .sp-grid { grid-template-columns: repeat(var(--sp-columns-sm), minmax(0, 1fr)); }
   .sp-shell { padding: 0 20px; }
   .sp-hero { padding: 28px 0 64px; }
   .sp-wordmark { margin-bottom: 48px; }

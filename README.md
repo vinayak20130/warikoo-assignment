@@ -8,7 +8,7 @@ dev harness and preview, Framer is the design surface.
 ```bash
 npm install
 npm run dev     # http://localhost:3000
-npm test        # 58 tests
+npm test        # 63 tests
 npm run build
 ```
 
@@ -23,8 +23,9 @@ Base URL: `https://syncsphere-hiv6.onrender.com`
 
 Three behaviours drove the design, all confirmed by sampling the live API rather than assumed:
 
-**The count varies.** Observed 5, 6, 7, 8, 9 and 10 courses across loads. The grid is
-`auto-fit`/`minmax`, so nothing depends on a fixed number of cards.
+**The count varies.** Observed 5, 6, 7, 8, 9 and 10 courses across loads. The grid takes however
+many cards it is given and flows them into the chosen number of columns, so nothing anywhere assumes
+a fixed card count — a short last row is just a short last row.
 
 **The country code alternates on every call.** It is therefore fetched **once per page load** and
 applied to every card. Calling it per card would render a grid of rupees and dollars side by side.
@@ -115,11 +116,17 @@ Two property controls appear in the design panel:
 
 | Control | Type | Does |
 |---|---|---|
-| **Accent** | Color | CTA, category badges, focus rings, hovers |
-| **Card density** | Segmented enum | Comfortable / Compact — card padding, radius, grid gap, title size |
+| **Card colour** | Color | The course card surface |
+| **Cards per row** | Number stepper, 1–4 | How many cards sit in a row on a wide screen |
 
-The accent control derives its own contrast: the CTA label switches between white and ink based on
-the accent's relative luminance, so the button stays readable even if a designer picks a pale yellow.
+**Card colour derives its own contrast.** Card text, muted text, borders, the badge tint and the
+skeleton shimmer are all computed from the chosen colour's relative luminance, so a near-black card
+flips to white text and light hairlines while a cream one keeps ink — without a designer touching
+anything else. The page *around* the cards is deliberately unaffected.
+
+**Cards per row is an upper bound, never a floor.** The count is clamped to 1–4, and narrower
+viewports only ever reduce it (at most 2 on a tablet, 1 on a phone). It is held as three separate
+variables because a media query cannot do arithmetic on a custom property.
 
 Styling is a single injected `<style>` block reading CSS custom properties — Framer has no build step
 for Tailwind, and inline style objects cannot express hover, media queries, focus rings or line
@@ -131,12 +138,12 @@ clamping. The two controls flow through those variables rather than being thread
 app/                     Next shell — fonts and the page
 components/skillpath/    the Framer component and its parts
   SkillPathLanding.tsx   default export + addPropertyControls
-  tokens.ts              defaults, density maps, accent contrast maths
+  tokens.ts              defaults, column clamping, card contrast maths
   styles.ts              the stylesheet
 lib/
   api.ts                 fetchJson with retries, validation, typed ApiError
   price.ts               currency formatting
   useCourses.ts          the loading/error/empty/ready state machine
   framer-shim.ts         no-op stand-in for Framer's `framer` module
-tests/                   58 tests
+tests/                   63 tests
 ```

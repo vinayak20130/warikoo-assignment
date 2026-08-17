@@ -219,49 +219,74 @@ describe("the empty state", () => {
 });
 
 describe("the property controls", () => {
-  it("applies the accent a designer picks, with a readable label on top", async () => {
+  async function renderRoot(props: Parameters<typeof SkillPathLanding>[0] = {}) {
     mockApi({});
-
-    const { container } = render(<SkillPathLanding accent="#FFE066" />);
+    const { container } = render(<SkillPathLanding {...props} />);
     await screen.findByText("How To YouTube");
-    const root = container.querySelector(".sp-root") as HTMLElement;
+    return container.querySelector(".sp-root") as HTMLElement;
+  }
 
-    expect(root.style.getPropertyValue("--sp-accent")).toBe("#FFE066");
-    // Pale accent, so the button label flips to ink instead of white.
-    expect(root.style.getPropertyValue("--sp-accent-contrast")).toBe("#16191A");
+  it("paints the cards the colour a designer picks", async () => {
+    const root = await renderRoot({ cardColor: "#101418" });
+
+    expect(root.style.getPropertyValue("--sp-card-bg")).toBe("#101418");
   });
 
-  it("keeps white label text on a dark accent", async () => {
-    mockApi({});
+  it("flips card text to white on a dark card so it stays readable", async () => {
+    const root = await renderRoot({ cardColor: "#101418" });
 
-    const { container } = render(<SkillPathLanding accent="#1F4B3F" />);
-    await screen.findByText("How To YouTube");
-    const root = container.querySelector(".sp-root") as HTMLElement;
-
-    expect(root.style.getPropertyValue("--sp-accent-contrast")).toBe("#FFFFFF");
+    expect(root.style.getPropertyValue("--sp-card-ink")).toBe("#FFFFFF");
+    // Borders and the badge tint have to come off the card colour too,
+    // or they vanish into a dark surface.
+    expect(root.style.getPropertyValue("--sp-card-border")).toBe("rgba(255, 255, 255, 0.16)");
+    expect(root.style.getPropertyValue("--sp-badge-bg")).toBe("rgba(255, 255, 255, 0.14)");
   });
 
-  it("tightens the cards when density is compact", async () => {
-    mockApi({});
+  it("keeps ink text on a light card", async () => {
+    const root = await renderRoot({ cardColor: "#FFF8E1" });
 
-    const { container } = render(<SkillPathLanding density="compact" />);
-    await screen.findByText("How To YouTube");
-    const root = container.querySelector(".sp-root") as HTMLElement;
+    expect(root.style.getPropertyValue("--sp-card-ink")).toBe("#16191A");
+    expect(root.style.getPropertyValue("--sp-card-border")).toBe("#E3E7E3");
+  });
 
-    expect(root.style.getPropertyValue("--sp-card-padding")).toBe("20px");
-    expect(root.style.getPropertyValue("--sp-card-radius")).toBe("12px");
-    expect(root.style.getPropertyValue("--sp-grid-gap")).toBe("16px");
+  it("leaves the page around the cards alone when the card colour changes", async () => {
+    const root = await renderRoot({ cardColor: "#101418" });
+
+    expect(root.style.getPropertyValue("--sp-paper")).toBe("#F7F8F6");
+    expect(root.style.getPropertyValue("--sp-ink")).toBe("#16191A");
+    expect(root.style.getPropertyValue("--sp-accent")).toBe("#1F4B3F");
+  });
+
+  it("lays the grid out with the requested number of cards per row", async () => {
+    const root = await renderRoot({ columns: 4 });
+
+    expect(root.style.getPropertyValue("--sp-columns")).toBe("4");
+  });
+
+  it("never widens the designer's count on smaller screens", async () => {
+    const root = await renderRoot({ columns: 4 });
+
+    expect(root.style.getPropertyValue("--sp-columns-md")).toBe("2");
+    expect(root.style.getPropertyValue("--sp-columns-sm")).toBe("1");
+  });
+
+  it("does not stretch a single-column choice back out on a tablet", async () => {
+    const root = await renderRoot({ columns: 1 });
+
+    expect(root.style.getPropertyValue("--sp-columns-md")).toBe("1");
+  });
+
+  it("clamps a count that would not fit", async () => {
+    const root = await renderRoot({ columns: 12 });
+
+    expect(root.style.getPropertyValue("--sp-columns")).toBe("4");
   });
 
   it("falls back to the defaults when no props are given", async () => {
-    mockApi({});
+    const root = await renderRoot();
 
-    const { container } = render(<SkillPathLanding />);
-    await screen.findByText("How To YouTube");
-    const root = container.querySelector(".sp-root") as HTMLElement;
-
-    expect(root.style.getPropertyValue("--sp-accent")).toBe("#1F4B3F");
-    expect(root.style.getPropertyValue("--sp-card-padding")).toBe("28px");
+    expect(root.style.getPropertyValue("--sp-card-bg")).toBe("#FFFFFF");
+    expect(root.style.getPropertyValue("--sp-columns")).toBe("3");
   });
 });
 

@@ -7,13 +7,18 @@ import { CoursesSection } from "@/components/skillpath/CoursesSection";
 import { Footer } from "@/components/skillpath/Footer";
 import { Hero } from "@/components/skillpath/Hero";
 import { CSS } from "@/components/skillpath/styles";
-import { DEFAULTS, DENSITIES, themeVars, type Density } from "@/components/skillpath/tokens";
+import {
+  DEFAULTS,
+  MAX_COLUMNS,
+  MIN_COLUMNS,
+  themeVars,
+} from "@/components/skillpath/tokens";
 
 export interface SkillPathLandingProps {
-  /** Brand colour: drives the CTA, category badges, focus rings and hovers. */
-  accent?: string;
-  /** How tightly the course cards are packed. */
-  density?: Density;
+  /** Background of the course cards. Text on them adapts to stay readable. */
+  cardColor?: string;
+  /** How many cards sit in a row on a wide screen. */
+  columns?: number;
 }
 
 /**
@@ -23,11 +28,11 @@ export interface SkillPathLandingProps {
  * @framerSupportedLayoutHeight auto
  */
 export default function SkillPathLanding({
-  accent = DEFAULTS.accent,
-  density = DEFAULTS.density,
+  cardColor = DEFAULTS.cardColor,
+  columns = DEFAULTS.columns,
 }: SkillPathLandingProps) {
   return (
-    <div className="sp-root" style={themeVars(accent, density) as CSSProperties}>
+    <div className="sp-root" style={themeVars(cardColor, columns) as CSSProperties}>
       <style>{CSS}</style>
 
       <Hero />
@@ -39,20 +44,19 @@ export default function SkillPathLanding({
   );
 }
 
-const title = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
-
 addPropertyControls(SkillPathLanding, {
-  accent: {
+  cardColor: {
     type: ControlType.Color,
-    title: "Accent",
-    defaultValue: DEFAULTS.accent,
+    title: "Card colour",
+    defaultValue: DEFAULTS.cardColor,
   },
-  density: {
-    type: ControlType.Enum,
-    title: "Card density",
-    options: [...DENSITIES],
-    optionTitles: DENSITIES.map(title),
-    defaultValue: DEFAULTS.density,
-    displaySegmentedControl: true,
+  columns: {
+    type: ControlType.Number,
+    title: "Cards per row",
+    defaultValue: DEFAULTS.columns,
+    min: MIN_COLUMNS,
+    max: MAX_COLUMNS,
+    step: 1,
+    displayStepper: true,
   },
 });
